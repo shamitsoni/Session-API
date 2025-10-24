@@ -12,6 +12,8 @@ mongo = MongoClient("mongodb://localhost:27017/")
 db = mongo["FlaskApp"]
 collection = db["Values"]
 
+CACHE_TTL = 30
+
 @app.route("/")
 def home():
     return jsonify(message="Hello from root")
@@ -28,7 +30,7 @@ def get_key(key):
     document = collection.find_one({"key": key})
     if document:
         val = document["val"]
-        r.set(key, val)
+        r.setex(key, CACHE_TTL, val)
         return jsonify({key: val, "source": "mongodb"})
     
     return jsonify(error="Key not found"), 404
@@ -54,7 +56,7 @@ def set():
     collection.update_one({"key":key}, {"$set": {"val": val}}, upsert=True)
 
     # Store in Redis
-    r.set(key, val)
+    r.setex(key, CACHE_TTL, val)
     return jsonify(message=f"SET {key} to {val}")
 
 if __name__ == "__main__":
