@@ -1,6 +1,10 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from redis import Redis
 from pymongo import MongoClient
+
+load_dotenv()
 
 app = Flask(__name__)
 r = Redis(host="localhost", port=6379, db=0)
