@@ -24,6 +24,7 @@ def get_key(key):
     # Check Redis cache first
     val = r.get(key)
     if val is not None:
+        r.expire(key, CACHE_TTL)
         return jsonify({key: val.decode("utf-8"), "source": "redis"})
     
     # Not in the cache --> retrieve from MongoDB
