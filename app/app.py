@@ -60,5 +60,14 @@ def set():
     r.setex(key, CACHE_TTL, val)
     return jsonify(message=f"SET {key} to {val}")
 
-if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+# Delete a pair
+@app.route("/delete/<key>", methods=["DELETE"])
+def delete_key(key):
+    in_cache = r.exists(key)
+    in_database = collection.find_one({"key": key}) is not None
+    if not in_cache and not in_database:
+        return jsonify(message=f"ERROR: Key {key} does not exist!")
+    
+    r.delete(key)
+    collection.delete_one({"key": key})
+    return jsonify(message=f"DELETED {key}")
