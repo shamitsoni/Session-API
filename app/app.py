@@ -1,4 +1,4 @@
-import os
+import uuid
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from redis import Redis
@@ -18,56 +18,52 @@ CACHE_TTL = 30
 def home():
     return jsonify(message="Hello from root")
 
-# Retrieve a specific pair
-@app.route("/get/<key>", methods=["GET"])
-def get_key(key):
-    # Check Redis cache first
-    val = r.get(key)
-    if val is not None:
-        r.expire(key, CACHE_TTL)
-        return jsonify({key: val.decode("utf-8"), "source": "redis"})
-    
-    # Not in the cache --> retrieve from MongoDB
-    document = collection.find_one({"key": key})
-    if document:
-        val = document["val"]
-        r.setex(key, CACHE_TTL, val)
-        return jsonify({key: val, "source": "mongodb"})
-    
-    return jsonify(error="Key not found"), 404
-
-# Retrieve all pairs
-@app.route("/get", methods=["GET"])
-def get():
-    data = collection.find({})
-    result = []
-    for doc in data:
-        doc.pop("_id", None)
-        result.append(doc)
-    return jsonify(result)
-
-# Set a pair
-@app.route("/set", methods=["POST"])
-def set():
+# Create a session
+@app.route("/session", methods=["POST"])
+def create_session():
     data = request.get_json()
-    key = data.get("key")
-    val = data.get("val")
+    user_id = data.get("user_id")
+    session_data = data.get("session_data", {})
+
+    session_id = str(uuid.uuid4())
 
     # Store in MongoDB
-    collection.update_one({"key":key}, {"$set": {"val": val}}, upsert=True)
+    collection.update_one(
+        {"session_id": session_id},
+        {"$set": {"user_id": user_id, "session_data": session_data}},
+        upsert=True
+    )
 
     # Store in Redis
-    r.setex(key, CACHE_TTL, val)
-    return jsonify(message=f"SET {key} to {val}")
+    r.setex(session_id, CACHE_TTL, str(session_data))
+    return jsonify(message="Session created", session_id=session_id)
 
-# Delete a pair
-@app.route("/delete/<key>", methods=["DELETE"])
-def delete_key(key):
-    in_cache = r.exists(key)
-    in_database = collection.find_one({"key": key}) is not None
-    if not in_cache and not in_database:
-        return jsonify(message=f"ERROR: Key {key} does not exist!")
+# Retrieve a session
+@app.route("/session/<session_id>", methods=["GET"])
+def get_session(session_id):
+    # Check Redis cache first
+    session_data = r.get(session_id)
+    if session_data is not None:
+        r.expire(session_data, CACHE_TTL)
+        return jsonify(session_id=session_id, session_data=session_data.decode("utf-8"), source="redis")
     
-    r.delete(key)
-    collection.delete_one({"key": key})
-    return jsonify(message=f"DELETED {key}")
+    # Not in the cache --> retrieve from MongoDB
+    document = collection.find_one({"session_id": session_id})
+    if document:
+        session_data = document["session_data"]
+        r.setex(session_id, CACHE_TTL, str(session_data))
+        return jsonify(session_id=session_id, session_data=session_data, source="mongodb")
+
+    return jsonify(error="Session not found"), 404
+
+# Delete a session
+@app.route("/session/<session_id>", methods=["DELETE"])
+def delete_session(session_id):
+    in_cache = r.exists(session_id)
+    in_database = collection.find_one({"session_id": session_id}) is not None
+    if not in_cache and not in_database:
+        return jsonify(error="Session not found"), 404
+    
+    r.delete(session_id)
+    collection.delete_one({"session_id": session_id})
+    return jsonify(message=f"Session {session_id} deleted")
