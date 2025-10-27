@@ -44,7 +44,7 @@ def get_session(session_id):
     # Check Redis cache first
     session_data = r.get(session_id)
     if session_data is not None:
-        r.expire(session_data, CACHE_TTL)
+        r.expire(session_id, CACHE_TTL)
         return jsonify(session_id=session_id, session_data=session_data.decode("utf-8"), source="redis")
     
     # Not in the cache --> retrieve from MongoDB
