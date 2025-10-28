@@ -23,7 +23,10 @@ def home():
 def create_session():
     data = request.get_json()
     user_id = data.get("user_id")
-    session_data = data.get("session_data", {})
+    session_data = data.get("session_data")
+    
+    if not user_id or not session_data:
+        return jsonify(message="Invalid body: please include user_id and session_data"), 400
 
     session_id = str(uuid.uuid4())
 
