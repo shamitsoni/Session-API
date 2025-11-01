@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from redis import Redis
 from pymongo import MongoClient
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -31,9 +32,14 @@ def create_session():
     session_id = str(uuid.uuid4())
 
     # Store in MongoDB
+    expires_at = datetime.now() + timedelta(seconds=CACHE_TTL)
     collection.update_one(
         {"session_id": session_id},
-        {"$set": {"user_id": user_id, "session_data": session_data}},
+        {"$set": {
+            "user_id": user_id, 
+            "session_data": session_data,
+            "expires_at": expires_at
+        }},
         upsert=True
     )
 
