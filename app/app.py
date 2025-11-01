@@ -1,3 +1,4 @@
+import os
 import uuid
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -8,8 +9,8 @@ from datetime import datetime, timedelta
 load_dotenv()
 
 app = Flask(__name__)
-r = Redis(host="localhost", port=6379, db=0)
-mongo = MongoClient("mongodb://localhost:27017/")
+r = Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=0)
+mongo = MongoClient(os.getenv("MONGO_URI"))
 db = mongo["FlaskApp"]
 collection = db["Values"]
 
