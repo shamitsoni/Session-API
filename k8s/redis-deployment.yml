@@ -17,3 +17,10 @@ spec:
           image: redis:8.0-alpine
           ports:
             - containerPort: 6379
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 30

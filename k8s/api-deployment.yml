@@ -24,3 +24,9 @@ spec:
               value: "6379"
             - name: MONGO_URI
               value: "mongodb://mongo:27017/"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 30
