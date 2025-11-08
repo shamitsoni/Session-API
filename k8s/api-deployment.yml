@@ -24,6 +24,13 @@ spec:
               value: "6379"
             - name: MONGO_URI
               value: "mongodb://mongo:27017/"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
           livenessProbe:
             httpGet:
               path: /
