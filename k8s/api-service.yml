@@ -3,10 +3,9 @@ kind: Service
 metadata:
   name: flaskapi
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: flaskapi
   ports:
     - port: 5000
       targetPort: 5000
-      nodePort: 30000
